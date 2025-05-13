@@ -1,0 +1,11 @@
+[versions]
+agp = "8.10.0"
+applovinSdk = "13.2.0"
+maioSdk = "2.0.4"
+
+[libraries]
+applovin-sdk = { module = "com.applovin:applovin-sdk", version.ref = "applovinSdk" }
+maio_android_sdk = { group = "com.maio", name = "android-sdk-v2", version.ref = "maioSdk" }
+
+[plugins]
+android-library = { id = "com.android.library", version.ref = "agp" }
