@@ -31,7 +31,7 @@ public class AppLovinMediationAdapter
         extends MediationAdapterBase
         implements MaxInterstitialAdapter, MaxRewardedAdapter
 {
-    private static final String ADAPTER_VERSION = "1.0.0.0";
+    private static final String ADAPTER_VERSION = "2.0.4.0.0";
     private Interstitial interstitialAd;
     private Rewarded     rewardedAd;
 
