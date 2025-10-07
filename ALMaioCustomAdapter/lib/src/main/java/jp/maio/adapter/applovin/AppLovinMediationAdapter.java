@@ -4,9 +4,11 @@ import android.app.Activity;
 
 import com.applovin.mediation.MaxAdFormat;
 import com.applovin.mediation.MaxReward;
+import com.applovin.mediation.adapter.MaxAdViewAdapter;
 import com.applovin.mediation.adapter.MaxAdapterError;
 import com.applovin.mediation.adapter.MaxInterstitialAdapter;
 import com.applovin.mediation.adapter.MaxRewardedAdapter;
+import com.applovin.mediation.adapter.listeners.MaxAdViewAdapterListener;
 import com.applovin.mediation.adapter.listeners.MaxInterstitialAdapterListener;
 import com.applovin.mediation.adapter.listeners.MaxRewardedAdapterListener;
 import com.applovin.mediation.adapter.parameters.MaxAdapterInitializationParameters;
@@ -16,7 +18,11 @@ import com.applovin.sdk.AppLovinSdk;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+
 import jp.maio.sdk.android.v2.Version;
+import jp.maio.sdk.android.v2.banner.MaioBannerListener;
+import jp.maio.sdk.android.v2.banner.MaioBannerSize;
+import jp.maio.sdk.android.v2.banner.MaioBannerView;
 import jp.maio.sdk.android.v2.errorcode.ErrorCode;
 import jp.maio.sdk.android.v2.interstitial.IInterstitialLoadCallback;
 import jp.maio.sdk.android.v2.interstitial.IInterstitialShowCallback;
@@ -29,9 +35,9 @@ import jp.maio.sdk.android.v2.rewarded.Rewarded;
 
 public class AppLovinMediationAdapter
         extends MediationAdapterBase
-        implements MaxInterstitialAdapter, MaxRewardedAdapter
+        implements MaxInterstitialAdapter, MaxRewardedAdapter, MaxAdViewAdapter
 {
-    private static final String ADAPTER_VERSION = "2.0.4.0.0";
+    private static final String ADAPTER_VERSION = "2.0.6.0.0";
     private Interstitial interstitialAd;
     private Rewarded     rewardedAd;
 
@@ -171,7 +177,46 @@ public class AppLovinMediationAdapter
 
     //endregion
 
+    //region MaxAdViewAdapter
+
+    @Override
+    public void loadAdViewAd(final MaxAdapterResponseParameters parameters, final MaxAdFormat adFormat, final Activity activity, final MaxAdViewAdapterListener listener)
+    {
+        String zoneId = parameters.getThirdPartyAdPlacementId();
+        log( "Loading " + adFormat.getLabel() + " ad for instance ID: " + zoneId );
+
+        if ( activity == null )
+        {
+            log( adFormat.getLabel() + " ad load failed: Activity is null" );
+            listener.onAdViewAdLoadFailed( MaxAdapterError.MISSING_ACTIVITY );
+
+            return;
+        }
+
+        MaioBannerView bannerAd = new MaioBannerView( activity, zoneId, toMaioBannerSize( adFormat ) );
+        bannerAd.setListener( new AdViewListener( listener ) );
+        bannerAd.load( parameters.isTesting() );
+    }
+
+    //endregion
+
     //region Helper Methods
+
+    private MaioBannerSize toMaioBannerSize(final MaxAdFormat adFormat)
+    {
+        if ( adFormat == MaxAdFormat.BANNER )
+        {
+            return MaioBannerSize.BANNER;
+        }
+        else if ( adFormat == MaxAdFormat.MREC )
+        {
+            return MaioBannerSize.MEDIUM_RECTANGLE;
+        }
+        else
+        {
+            throw new IllegalArgumentException( "Invalid ad format: " + adFormat );
+        }
+    }
 
     private MaxAdapterError toMaxError(final int maioErrorCode, final String maioErrorMessage)
     {
@@ -323,4 +368,65 @@ public class AppLovinMediationAdapter
             listener.onRewardedAdHidden();
         }
     }
+
+    //endregion
+
+    //region AdViewListener
+
+    private class AdViewListener
+            implements MaioBannerListener
+    {
+        private final MaxAdViewAdapterListener listener;
+
+        private AdViewListener(final MaxAdViewAdapterListener listener)
+        {
+            this.listener = listener;
+        }
+
+        @Override
+        public void loaded(@NonNull final MaioBannerView maioBannerView)
+        {
+            log( "AdView ad loaded" );
+            listener.onAdViewAdLoaded( maioBannerView );
+        }
+
+        @Override
+        public void failedToLoad(@NonNull final MaioBannerView maioBannerView, final int errorCode)
+        {
+            MaxAdapterError adapterError = toMaxError( errorCode, "Unspecified" );
+            log( "AdView ad failed to load with error (" + adapterError + ")" );
+            listener.onAdViewAdLoadFailed( adapterError );
+        }
+
+        @Override
+        public void impression(@NonNull final MaioBannerView maioBannerView)
+        {
+            log( "AdView ad displayed" );
+            listener.onAdViewAdDisplayed();
+        }
+
+        @Override
+        public void clicked(@NonNull final MaioBannerView maioBannerView)
+        {
+            log( "AdView ad clicked" );
+            listener.onAdViewAdClicked();
+        }
+
+        @Override
+        public void leftApplication(@NonNull final MaioBannerView maioBannerView)
+        {
+            log( "AdView ad left application" );
+        }
+
+        @Override
+        public void failedToShow(@NonNull final MaioBannerView maioBannerView, final int errorCode)
+        {
+            MaxAdapterError adapterError = toMaxError( errorCode, "Unspecified" );
+            log( "AdView ad failed to display with error (" + adapterError + ")" );
+            listener.onAdViewAdDisplayFailed( adapterError );
+        }
+    }
+
+    //endregion
+
 }

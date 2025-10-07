@@ -1,7 +1,7 @@
 [versions]
 agp = "8.10.0"
-applovinSdk = "13.2.0"
-maioSdk = "2.0.4"
+applovinSdk = "13.4.0"
+maioSdk = "2.0.6"
 
 [libraries]
 applovin-sdk = { module = "com.applovin:applovin-sdk", version.ref = "applovinSdk" }
